@@ -1,5 +1,7 @@
 # pinia-task-manager
 
+<img width="1326" alt="Screenshot 2023-08-07 at 8 18 06" src="https://github.com/shingoooooon/pinia-task-manager/assets/95001658/b6395468-0158-4c44-95e8-f166f863949c">
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
