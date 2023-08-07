@@ -18,13 +18,14 @@
     </nav>
 
     <!-- list -->
-    <div v-if="filter === 'all'" class="task-list">
+    <div v-if="taskStore.isLoading" class="task-list">Loading...</div>
+    <div v-if="filter === 'all' && !taskStore.isLoading" class="task-list">
       <p>You have {{ taskStore.allCount }} tasks</p>
       <div v-for="task in taskStore.tasks" :key="task.id">
         <task-details :task="task"></task-details>
       </div>
     </div>
-    <div v-else-if="filter === 'favs'" class="task-list">
+    <div v-else-if="filter === 'favs' && !taskStore.isLoading" class="task-list">
       <p>You have {{ taskStore.favCount }} fav tasks</p>
       <div v-for="task in taskStore.favs" :key="task.id">
         <task-details :task="task"></task-details>
@@ -48,6 +49,10 @@ export default {
     const filter = ref('all')
 
     return { taskStore, filter }
+  },
+  mounted() {
+    const taskStore = useTaskStore()
+    taskStore.getTasks()
   }
 }
 </script>
