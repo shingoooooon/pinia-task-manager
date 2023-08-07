@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
 import type { ITask } from '../doimain/task/interface'
 
+const API_URL = 'https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia'
+
+const taskErrorMessages = {
+  fetch: 'Failed to fetch tasks',
+  add: 'Failed to add task',
+  delete: 'Failed to delete task',
+  update: 'Failed to update task'
+}
+
 export const useTaskStore = defineStore('taskStore', {
   state: () => ({
     tasks: [] as ITask[],
@@ -24,77 +33,90 @@ export const useTaskStore = defineStore('taskStore', {
   actions: {
     async getTasks(): Promise<any> {
       this.isLoading = true
-      fetch('https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia.json')
-        .then((res) => {
-          if (res.ok) return res.json()
-        })
-        .then((data) => {
-          this.isLoading = false
-          const tempTasks: ITask[] = []
-          for (const id in data) {
-            tempTasks.push({
-              id: parseInt(data[id].id),
-              title: data[id].title,
-              isFav: data[id].isFav
-            })
-          }
-          this.tasks = tempTasks
-        })
+      try {
+        const response = await fetch(`${API_URL}.json`)
+        if (!response.ok) {
+          throw new Error(taskErrorMessages.fetch)
+        }
+        const data = await response.json()
+        const tempTasks: ITask[] = []
+        for (const id in data) {
+          tempTasks.push({
+            id: parseInt(data[id].id),
+            title: data[id].title,
+            isFav: data[id].isFav
+          })
+        }
+        this.tasks = tempTasks
+        this.isLoading = false
+      } catch (error) {
+        alert(error)
+      }
     },
     addTask(task: ITask): void {
-      fetch('https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia.json', {
+      this.isLoading = true
+      fetch(`${API_URL}.json`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          id: task.id,
-          title: task.title,
-          isFav: task.isFav
-        })
-      }).then((res) => {
-        if (res.ok) this.getTasks()
+        body: JSON.stringify(task)
       })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(taskErrorMessages.add)
+          }
+          this.isLoading = false
+          this.getTasks()
+        })
+        .catch((error) => {
+          alert(error)
+        })
     },
     deleteTask(id: number): void {
-      fetch(`https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia.json`, {
+      fetch(`${API_URL}.json`, {
         method: 'GET'
       })
-        .then((res) => res.json())
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(taskErrorMessages.fetch)
+          }
+          return response.json()
+        })
         .then((data) => {
           for (const key in data) {
             if (data[key].id === id) {
-              fetch(`https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia/${key}.json`, {
+              fetch(`${API_URL}/${key}.json`, {
                 method: 'DELETE'
               })
-                .then((res) => {
-                  if (res.ok) {
-                    this.tasks = this.tasks.filter((t) => t.id !== id)
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(taskErrorMessages.delete)
                   }
+                  this.tasks = this.tasks.filter((task) => task.id !== id)
                 })
-                .catch((err) => {
-                  alert(err)
+                .catch((error) => {
+                  alert(error)
                 })
             }
           }
         })
-        .catch((err) => {
-          alert(err)
+        .catch((error) => {
+          alert(error)
         })
     },
     toggleFav(id: number): void {
       const task = this.tasks.find((t) => t.id === id)
       if (task) {
         task.isFav = !task.isFav
-
-        fetch(`https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia.json`, {
+        fetch(`${API_URL}.json`, {
           method: 'GET'
         })
           .then((res) => res.json())
           .then((data) => {
             for (const key in data) {
               if (data[key].id === id) {
-                fetch(`https://vue-http-demo-e3fe1-default-rtdb.firebaseio.com/pinia/${key}.json`, {
+                fetch(`${API_URL}/${key}.json`, {
                   method: 'PATCH',
                   headers: {
                     'Content-Type': 'application/json'
@@ -102,9 +124,15 @@ export const useTaskStore = defineStore('taskStore', {
                   body: JSON.stringify({
                     isFav: task.isFav
                   })
-                }).catch((err) => {
-                  alert(err)
                 })
+                  .then((response) => {
+                    if (!response.ok) {
+                      throw new Error(taskErrorMessages.update)
+                    }
+                  })
+                  .catch((err) => {
+                    alert(err)
+                  })
               }
             }
           })
